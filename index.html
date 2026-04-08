@@ -538,6 +538,59 @@
       border-radius: 3px;
     }
 
+    /* Participant input */
+    .participant-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .participant-input-group label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      text-align: left;
+    }
+
+    .participant-input {
+      width: 100%;
+      padding: 0.85rem 1.2rem;
+      font-size: 1rem;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .participant-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .participant-input::placeholder {
+      color: rgba(136, 145, 168, 0.5);
+    }
+
+    .input-error {
+      border-color: var(--red) !important;
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2) !important;
+    }
+
+    .error-msg {
+      font-size: 0.8rem;
+      color: var(--red);
+      min-height: 1.2em;
+      text-align: left;
+    }
+
     /* Sending indicator */
     .sending-status {
       font-size: 0.8rem;
@@ -643,6 +696,13 @@
         <!-- Filled dynamically based on device -->
       </div>
 
+      <div class="participant-input-group">
+        <label for="participant-name">닉네임</label>
+        <input type="text" id="participant-name" class="participant-input" placeholder="예: 콩쥐" autocomplete="off"
+          spellcheck="false">
+        <div class="error-msg" id="name-error"></div>
+      </div>
+
       <button id="btn-start" class="btn">실험 시작 →</button>
     </div>
   </div>
@@ -709,7 +769,7 @@
       'use strict';
 
       // ─── Configuration ──────────────────────────────────────────
-      const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZKSY8GDck9JeK14XUoQY1LT-yD3IC6RlDVdnjkBZf9Dp9oIraoepOUL8j5rdC8fs5/exec';
+      const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcO4dHXQe8oTWA7vF6t7iq6WY0Q0ge8rmy5Kim9sv6scbYvqAn8OunLvMG_BXsaiVC/exec';
       const RESPONSE_TIMEOUT = 2000;  // ms
       const ANTICIPATORY_CUTOFF = 200; // ms
       const PRACTICE_TRIALS = 8;    // per block (5~10 range)
@@ -750,6 +810,7 @@
 
       // ─── State ─────────────────────────────────────────────────
       const participantId = crypto.randomUUID ? crypto.randomUUID() : generateUUID();
+      let participantName = '';
       let allData = [];
       let acceptingInput = false;
       let currentCorrectKey = null;
@@ -1068,6 +1129,7 @@
           if (wasPremature && prematureData) {
             const record = {
               participant_id: participantId,
+              participant_name: participantName,
               trial_index: globalTrialIndex,
               block_index: trial.block_index,
               block_condition: trial.block_condition,
@@ -1189,6 +1251,7 @@
 
             const record = {
               participant_id: participantId,
+              participant_name: participantName,
               trial_index: globalTrialIndex,
               block_index: trial.block_index,
               block_condition: trial.block_condition,
@@ -1481,7 +1544,7 @@
       // ─── Google Sheets Submission ──────────────────────────────
       async function sendDataToSheets(attempt = 1) {
         const statusEl = document.getElementById('sending-status');
-        if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbyZKSY8GDck9JeK14XUoQY1LT-yD3IC6RlDVdnjkBZf9Dp9oIraoepOUL8j5rdC8fs5/execLE') {
+        if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbwcO4dHXQe8oTWA7vF6t7iq6WY0Q0ge8rmy5Kim9sv6scbYvqAn8OunLvMG_BXsaiVC/exec') {
           statusEl.textContent = 'Google Script URL이 설정되지 않았습니다. 데이터가 저장되지 않았습니다.';
           statusEl.className = 'sending-status error';
           console.warn('[CRT] Google Script URL not configured. Data not sent.');
@@ -1531,7 +1594,26 @@
       // ─── Init ──────────────────────────────────────────────────
       initStartScreen();
       setupTouchListeners();
-      document.getElementById('btn-start').addEventListener('click', startExperiment);
+
+      const nameInput = document.getElementById('participant-name');
+      const nameError = document.getElementById('name-error');
+
+      nameInput.addEventListener('input', () => {
+        nameInput.classList.remove('input-error');
+        nameError.textContent = '';
+      });
+
+      document.getElementById('btn-start').addEventListener('click', () => {
+        const name = nameInput.value.trim();
+        if (!name) {
+          nameInput.classList.add('input-error');
+          nameError.textContent = '닉네임을 입력해주세요.';
+          nameInput.focus();
+          return;
+        }
+        participantName = name;
+        startExperiment();
+      });
 
     })();
   </script>
