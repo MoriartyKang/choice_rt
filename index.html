@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Choice Reaction Time Experiment — Hick's Law</title>
+  <meta name="description" content="선택 반응시간 실험: 선택지 수(2,3,4)에 따른 반응시간 변화를 측정하여 Hick's law를 검증합니다.">
+  <style>
+    /* ===== Design System ===== */
+    :root {
+      --bg: #0c0e14;
+      --bg-card: rgba(20, 24, 38, 0.85);
+      --glass: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e2e6f0;
+      --text-dim: #8891a8;
+      --accent: #6c8cff;
+      --accent-glow: rgba(108, 140, 255, 0.25);
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --radius: 16px;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Ambient background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 30% 20%, rgba(108, 140, 255, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(52, 211, 153, 0.04) 0%, transparent 50%);
+      animation: ambientDrift 20s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes ambientDrift {
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      100% {
+        transform: translate(-3%, 2%) rotate(3deg);
+      }
+    }
+
+    /* ===== Screen Container ===== */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+      max-width: 760px;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ===== Card ===== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      padding: 3rem;
+      width: 100%;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    /* ===== Typography ===== */
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .instructions {
+      text-align: left;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--text-dim);
+    }
+
+    .instructions strong {
+      color: var(--text);
+    }
+
+    /* Device warning badge */
+    .device-warning {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      border-radius: 10px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.82rem;
+      color: var(--yellow);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ===== Button ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.85rem 2.2rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: var(--font);
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), #5570e6);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 20px var(--accent-glow);
+      letter-spacing: 0.01em;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 30px var(--accent-glow);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    /* ===== Experiment Display ===== */
+    #experiment-screen {
+      justify-content: flex-start;
+      padding-top: 5vh;
+      height: 100vh;
+    }
+
+    .trial-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      width: 100%;
+    }
+
+    .fixation {
+      font-size: 3.5rem;
+      font-weight: 300;
+      color: var(--text-dim);
+      user-select: none;
+    }
+
+    .stimulus {
+      font-size: 8rem;
+      font-weight: 300;
+      color: #fff;
+      user-select: none;
+      text-shadow: 0 0 60px var(--accent-glow);
+      animation: stimPop 0.15s ease-out;
+    }
+
+    @keyframes stimPop {
+      from {
+        transform: scale(0.7);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .feedback {
+      font-size: 1.2rem;
+      font-weight: 600;
+      padding: 0.6rem 1.5rem;
+      border-radius: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .feedback.correct {
+      color: var(--green);
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    .feedback.incorrect {
+      color: var(--red);
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .feedback.timeout {
+      color: var(--yellow);
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    .feedback.premature {
+      color: var(--yellow);
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      font-size: 1.05rem;
+    }
+
+    /* Key mapping bar (desktop) */
+    .key-mapping {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      padding: 1rem 2rem;
+      background: rgba(12, 14, 20, 0.92);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .key-mapping .map-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .key-mapping .key-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 32px;
+      padding: 0 10px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .key-mapping .arrow-label {
+      font-size: 1.3rem;
+    }
+
+    /* ===== Touch Controls (Mobile) ===== */
+    .touch-controls {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      /* shown only on mobile */
+      grid-template-areas:
+        ". up ."
+        "left down right";
+      grid-template-columns: repeat(3, 76px);
+      grid-template-rows: repeat(2, 76px);
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .touch-controls.visible {
+      display: grid;
+    }
+
+    .touch-btn {
+      width: 76px;
+      height: 76px;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .touch-btn:active,
+    .touch-btn.pressed {
+      background: rgba(108, 140, 255, 0.3);
+      border-color: var(--accent);
+      transform: scale(0.92);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .touch-btn.hidden-dir {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #touch-up {
+      grid-area: up;
+    }
+
+    #touch-left {
+      grid-area: left;
+    }
+
+    #touch-down {
+      grid-area: down;
+    }
+
+    #touch-right {
+      grid-area: right;
+    }
+
+    /* Progress bar */
+    .progress-bar-container {
+      width: 100%;
+      max-width: 400px;
+      height: 4px;
+      background: var(--glass);
+      border-radius: 2px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .block-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ===== Results ===== */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+      width: 100%;
+    }
+
+    .result-card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .result-card .label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-card .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+
+    .result-card .unit {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    .chart-container {
+      width: 100%;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-container canvas {
+      width: 100%;
+      height: auto;
+    }
+
+    .regression-eq {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      color: var(--accent);
+      margin-top: 1rem;
+      padding: 0.8rem 1.2rem;
+      background: rgba(108, 140, 255, 0.08);
+      border: 1px solid rgba(108, 140, 255, 0.15);
+      border-radius: 10px;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-bottom: 2rem;
+      font-size: 0.88rem;
+    }
+
+    .results-table th,
+    .results-table td {
+      padding: 0.75rem 1rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .results-table th {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      background: var(--glass);
+    }
+
+    .results-table th:first-child {
+      border-radius: 10px 0 0 0;
+    }
+
+    .results-table th:last-child {
+      border-radius: 0 10px 0 0;
+    }
+
+    .results-table td {
+      font-family: var(--mono);
+    }
+
+    .results-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    #results-screen .card {
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    /* Sending indicator */
+    .sending-status {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 1rem;
+      min-height: 1.5em;
+    }
+
+    .sending-status.success {
+      color: var(--green);
+    }
+
+    .sending-status.error {
+      color: var(--red);
+    }
+
+    /* ===== Mobile-specific adjustments ===== */
+    @media (max-width: 600px) {
+      .card {
+        padding: 1.5rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .stimulus {
+        font-size: 5rem;
+      }
+
+      .trial-display {
+        min-height: 200px;
+      }
+
+      #experiment-screen {
+        padding-top: 3vh;
+        padding-bottom: 180px;
+        /* room for touch buttons */
+      }
+
+      .results-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .touch-controls {
+        grid-template-columns: repeat(3, 68px);
+        grid-template-rows: repeat(2, 68px);
+      }
+
+      .touch-btn {
+        width: 68px;
+        height: 68px;
+        font-size: 1.7rem;
+      }
+
+      .key-mapping {
+        display: none !important;
+        /* hide WASD bar on mobile, touch buttons replace it */
+      }
+    }
+
+    @media (max-width: 380px) {
+      .touch-controls {
+        grid-template-columns: repeat(3, 60px);
+        grid-template-rows: repeat(2, 60px);
+      }
+
+      .touch-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Prevent mobile scroll/bounce */
+    html,
+    body {
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #results-screen,
+    #results-screen .card {
+      touch-action: pan-y;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===================== START SCREEN ===================== -->
+  <div id="start-screen" class="screen active">
+    <div class="card">
+      <h1>선택 반응시간 실험</h1>
+      <p class="subtitle">Choice Reaction Time — Hick's Law</p>
+
+      <div class="device-warning" id="device-warning" style="display:none;">
+        ⚠️ 가능하면 PC에서 참여해주세요. 키보드 입력이 더 정확합니다.
+      </div>
+
+      <div class="instructions" id="start-instructions">
+        <!-- Filled dynamically based on device -->
+      </div>
+
+      <button id="btn-start" class="btn">실험 시작 →</button>
+    </div>
+  </div>
+
+  <!-- =================== INSTRUCTION SCREEN =================== -->
+  <div id="instruction-screen" class="screen">
+    <div class="card">
+      <h2 id="instr-title"></h2>
+      <p class="subtitle" id="instr-body"></p>
+      <div class="instructions" id="instr-mapping"></div>
+      <button id="btn-instr-continue" class="btn">준비 완료 →</button>
+    </div>
+  </div>
+
+  <!-- ==================== EXPERIMENT SCREEN ==================== -->
+  <div id="experiment-screen" class="screen">
+    <div class="block-label" id="block-label">PRACTICE</div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="trial-display" id="trial-display"></div>
+    <div class="key-mapping" id="key-mapping-bar"></div>
+  </div>
+
+  <!-- Touch Controls (Mobile) -->
+  <div class="touch-controls" id="touch-controls">
+    <button class="touch-btn" id="touch-up">↑</button>
+    <button class="touch-btn" id="touch-left">←</button>
+    <button class="touch-btn" id="touch-down">↓</button>
+    <button class="touch-btn" id="touch-right">→</button>
+  </div>
+
+  <!-- ==================== RESULTS SCREEN ==================== -->
+  <div id="results-screen" class="screen">
+    <div class="card">
+      <h1>실험 결과</h1>
+      <p class="subtitle">Results Summary</p>
+
+      <table class="results-table" id="results-table">
+        <thead>
+          <tr>
+            <th>조건 (n)</th>
+            <th>log₂(n)</th>
+            <th>Mean RT (ms)</th>
+            <th>Median RT (ms)</th>
+            <th>정확도 (%)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="chart-container">
+        <canvas id="chart-canvas" width="680" height="380"></canvas>
+      </div>
+      <div class="regression-eq" id="regression-eq"></div>
+
+      <div class="sending-status" id="sending-status"></div>
+    </div>
+  </div>
+
+  <!-- ======================== SCRIPT ======================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ─── Configuration ──────────────────────────────────────────
+      const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZKSY8GDck9JeK14XUoQY1LT-yD3IC6RlDVdnjkBZf9Dp9oIraoepOUL8j5rdC8fs5/exec';
+      const RESPONSE_TIMEOUT = 2000;  // ms
+      const ANTICIPATORY_CUTOFF = 200; // ms
+      const PRACTICE_TRIALS = 8;    // per block (5~10 range)
+      const MAIN_TRIALS = 20;   // per block
+
+      // ─── Device Detection ───────────────────────────────────────
+      const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent)
+        || ('ontouchstart' in window && window.innerWidth <= 768);
+      const deviceType = isMobile ? 'mobile' : 'desktop';
+
+      // ─── Stimulus & Key Mapping ─────────────────────────────────
+      // Internal mapping: direction → keyboard key (WASD) and arrow symbol
+      const ARROW_MAP = {
+        'up': { symbol: '↑', key: 'w', keyLabel: 'W', touchId: 'touch-up' },
+        'down': { symbol: '↓', key: 's', keyLabel: 'S', touchId: 'touch-down' },
+        'left': { symbol: '←', key: 'a', keyLabel: 'A', touchId: 'touch-left' },
+        'right': { symbol: '→', key: 'd', keyLabel: 'D', touchId: 'touch-right' },
+      };
+
+      // Reverse map: key → direction
+      const KEY_TO_DIR = {};
+      Object.entries(ARROW_MAP).forEach(([dir, info]) => {
+        KEY_TO_DIR[info.key] = dir;
+      });
+
+      // Blocked design: conditions in fixed order
+      const BLOCK_ORDER = [2, 3, 4];
+      const CONDITIONS = {
+        2: ['left', 'right'],
+        3: ['left', 'right', 'up'],
+        4: ['left', 'right', 'up', 'down'],
+      };
+
+      // Valid keys per condition (for input filtering)
+      function getValidKeys(condition) {
+        return CONDITIONS[condition].map(d => ARROW_MAP[d].key);
+      }
+
+      // ─── State ─────────────────────────────────────────────────
+      const participantId = crypto.randomUUID ? crypto.randomUUID() : generateUUID();
+      let allData = [];
+      let acceptingInput = false;
+      let currentCorrectKey = null;
+      let currentCondition = 2;
+      let stimulusOnsetTime = 0;
+      let keyHeld = false; // track keyup for repeated key suppression
+      let pendingResolve = null; // for touch input to resolve trial
+      let detectingPremature = false; // for premature response detection
+      let prematureResolve = null; // resolver for premature response
+
+      // ─── DOM Refs ──────────────────────────────────────────────
+      const screens = {
+        start: document.getElementById('start-screen'),
+        instruction: document.getElementById('instruction-screen'),
+        experiment: document.getElementById('experiment-screen'),
+        results: document.getElementById('results-screen'),
+      };
+      const trialDisplay = document.getElementById('trial-display');
+      const progressFill = document.getElementById('progress-fill');
+      const blockLabel = document.getElementById('block-label');
+      const keyMappingBar = document.getElementById('key-mapping-bar');
+      const touchControls = document.getElementById('touch-controls');
+
+      // ─── Helpers ───────────────────────────────────────────────
+      function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+          const r = Math.random() * 16 | 0;
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+      }
+
+      function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function showScreen(name) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[name].classList.add('active');
+      }
+
+      function sleep(ms) {
+        return new Promise(r => setTimeout(r, ms));
+      }
+
+      // ─── Initialize Start Screen Based on Device ───────────────
+      function initStartScreen() {
+        const instructionsEl = document.getElementById('start-instructions');
+        const warningEl = document.getElementById('device-warning');
+
+        if (isMobile) {
+          warningEl.style.display = 'inline-flex';
+          instructionsEl.innerHTML = `
+      <p>이 실험은 <strong>선택지 수(2, 3, 4)</strong>에 따른 반응시간 변화를 측정합니다.</p><br>
+      <p>화면 중앙에 <strong>화살표</strong>가 나타나면, 화면 하단의 <strong>해당 방향 버튼</strong>을 최대한 <strong>빠르고 정확하게</strong> 터치해 주세요.</p><br>
+      <p><strong>입력 방법:</strong></p>
+      <p>&nbsp;&nbsp;화면 하단의 방향 버튼을 터치</p>
+      <p>&nbsp;&nbsp;↑ ↓ ← → 버튼이 표시됩니다.</p><br>
+      <p>각 블록마다 연습 시행을 진행한 뒤 본 실험이 시작됩니다.</p>
+      <p>총 <strong>3 블록 × 20 trials = 60 trials</strong> (약 5분 소요)</p>
+    `;
+        } else {
+          instructionsEl.innerHTML = `
+      <p>이 실험은 <strong>선택지 수(2, 3, 4)</strong>에 따른 반응시간 변화를 측정합니다.</p><br>
+      <p>화면 중앙에 <strong>화살표</strong>가 나타나면, 해당 방향에 대응하는 키보드 키를 <strong>최대한 빠르고 정확하게</strong> 눌러 주세요.</p><br>
+      <p><strong>키 매핑 (WASD):</strong></p>
+      <p>&nbsp;&nbsp;↑ : <strong>W</strong> &nbsp;&nbsp;&nbsp; ↓ : <strong>S</strong> &nbsp;&nbsp;&nbsp; ← : <strong>A</strong> &nbsp;&nbsp;&nbsp; → : <strong>D</strong></p><br>
+      <p>각 블록마다 연습 시행을 진행한 뒤 본 실험이 시작됩니다.</p>
+      <p>총 <strong>3 블록 × 20 trials = 60 trials</strong> (약 5분 소요)</p>
+    `;
+        }
+      }
+
+      // ─── Trial Generation ──────────────────────────────────────
+      function generateTrials(condition, count, isPractice, blockIndex) {
+        const directions = CONDITIONS[condition];
+        // Balanced distribution
+        const perDir = Math.floor(count / directions.length);
+        const remainder = count % directions.length;
+        const pool = [];
+        directions.forEach((d, i) => {
+          const n = perDir + (i < remainder ? 1 : 0);
+          for (let j = 0; j < n; j++) pool.push(d);
+        });
+
+        const shuffled = shuffle(pool);
+        return shuffled.map(dir => ({
+          block_index: blockIndex,
+          block_condition: condition,
+          stimulus: dir,
+          correct_response: ARROW_MAP[dir].key,
+          foreperiod_ms: randInt(300, 700),
+          iti_ms: randInt(400, 800),
+          practice_trial: isPractice,
+        }));
+      }
+
+      // ─── Key Mapping Bar (Desktop) ─────────────────────────────
+      function renderKeyMappingBar(condition) {
+        if (isMobile) {
+          keyMappingBar.style.display = 'none';
+          return;
+        }
+        const dirs = CONDITIONS[condition];
+        keyMappingBar.innerHTML = dirs.map(d => {
+          const m = ARROW_MAP[d];
+          return `<div class="map-item">
+      <span class="arrow-label">${m.symbol}</span>
+      <span class="key-badge">${m.keyLabel}</span>
+    </div>`;
+        }).join('');
+        keyMappingBar.style.display = 'flex';
+      }
+
+      function hideKeyMappingBar() {
+        keyMappingBar.style.display = 'none';
+      }
+
+      // ─── Touch Controls ────────────────────────────────────────
+      function showTouchControls(condition) {
+        if (!isMobile) {
+          touchControls.classList.remove('visible');
+          return;
+        }
+
+        const dirs = CONDITIONS[condition];
+        Object.entries(ARROW_MAP).forEach(([dir, info]) => {
+          const btn = document.getElementById(info.touchId);
+          if (dirs.includes(dir)) {
+            btn.classList.remove('hidden-dir');
+          } else {
+            btn.classList.add('hidden-dir');
+          }
+        });
+        touchControls.classList.add('visible');
+      }
+
+      function hideTouchControls() {
+        touchControls.classList.remove('visible');
+      }
+
+      // Set up touch event listeners
+      function setupTouchListeners() {
+        Object.entries(ARROW_MAP).forEach(([dir, info]) => {
+          const btn = document.getElementById(info.touchId);
+
+          // Use touchstart for mobile (faster response), mousedown for desktop fallback
+          btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouchInput(info.key);
+          }, { passive: false });
+
+          // Mousedown fallback (for testing on desktop)
+          btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            handleTouchInput(info.key);
+          });
+        });
+      }
+
+      function handleTouchInput(key) {
+        // Check for premature touch response
+        if (detectingPremature) {
+          const validKeys = getValidKeys(currentCondition);
+          if (!validKeys.includes(key)) return;
+
+          detectingPremature = false;
+          const dir = KEY_TO_DIR[key];
+          const btn = document.getElementById(ARROW_MAP[dir].touchId);
+          btn.classList.add('pressed');
+          setTimeout(() => btn.classList.remove('pressed'), 200);
+
+          if (prematureResolve) {
+            prematureResolve({ key, dir, method: 'touch' });
+            prematureResolve = null;
+          }
+          return;
+        }
+
+        if (!acceptingInput) return;
+
+        const validKeys = getValidKeys(currentCondition);
+        if (!validKeys.includes(key)) return;
+
+        acceptingInput = false;
+        const rt = performance.now() - stimulusOnsetTime;
+
+        // Visual feedback on button
+        const dir = KEY_TO_DIR[key];
+        const btn = document.getElementById(ARROW_MAP[dir].touchId);
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 200);
+
+        // Resolve the pending trial
+        if (pendingResolve) {
+          pendingResolve({
+            key: key,
+            dir: dir,
+            rt: rt,
+            method: 'touch',
+          });
+        }
+      }
+
+      // ─── Instructions ──────────────────────────────────────────
+      function showBlockInstructions(blockIndex, condition, isPractice) {
+        return new Promise(resolve => {
+          const title = document.getElementById('instr-title');
+          const body = document.getElementById('instr-body');
+          const mapping = document.getElementById('instr-mapping');
+          const dirs = CONDITIONS[condition];
+
+          if (isPractice) {
+            title.textContent = `Block ${blockIndex} 연습 — ${condition}-Choice`;
+            body.textContent = `${condition}개의 선택지 중 올바른 방향을 선택하세요. 연습에서는 피드백이 제공됩니다.`;
+          } else {
+            title.textContent = `Block ${blockIndex} 본 실험 — ${condition}-Choice`;
+            body.textContent = `${condition}개의 선택지에 대해 ${MAIN_TRIALS}회 시행합니다. 본 실험에서는 피드백이 제공되지 않습니다. 최대한 빠르고 정확하게 응답하세요.`;
+          }
+
+          if (isMobile) {
+            // Mobile: show arrow → touch button
+            mapping.innerHTML = `<p><strong>이 블록의 방향 버튼:</strong></p>` +
+              dirs.map(d => `<p style="margin:4px 0">&nbsp;&nbsp;${ARROW_MAP[d].symbol} → <strong>${ARROW_MAP[d].symbol} 버튼 터치</strong></p>`).join('') +
+              `<br><p style="color:var(--text-dim); font-size:0.82rem;">화면 하단의 방향 버튼을 터치하세요.</p>`;
+          } else {
+            // Desktop: show arrow → WASD key
+            mapping.innerHTML = `<p><strong>이 블록의 키 매핑:</strong></p>` +
+              dirs.map(d => `<p style="margin:4px 0">&nbsp;&nbsp;${ARROW_MAP[d].symbol} → <strong>${ARROW_MAP[d].keyLabel}</strong></p>`).join('');
+          }
+
+          showScreen('instruction');
+          hideTouchControls();
+
+          document.getElementById('btn-instr-continue').onclick = () => resolve();
+        });
+      }
+
+      // ─── Single Trial Runner ───────────────────────────────────
+      function runTrial(trial, indexInBlock, totalInBlock, globalTrialIndex) {
+        return new Promise(async (resolve) => {
+          const condition = trial.block_condition;
+          currentCondition = condition;
+          renderKeyMappingBar(condition);
+          showTouchControls(condition);
+
+          // Update progress
+          progressFill.style.width = `${(indexInBlock / totalInBlock) * 100}%`;
+          blockLabel.textContent = trial.practice_trial
+            ? `PRACTICE — ${condition}-CHOICE (${indexInBlock + 1}/${totalInBlock})`
+            : `BLOCK ${trial.block_index} — ${condition}-CHOICE (${indexInBlock + 1}/${totalInBlock})`;
+
+          // === Premature Response Detection Setup ===
+          let prematureData = null;
+          let prematureKeyHeld = false;
+
+          function sleepWithPrematureDetection(ms) {
+            return new Promise(sleepResolve => {
+              const timerId = setTimeout(() => sleepResolve(false), ms);
+              prematureResolve = (data) => {
+                clearTimeout(timerId);
+                prematureData = data;
+                sleepResolve(true);
+              };
+            });
+          }
+
+          function onPrematureKeyDown(e) {
+            if (!detectingPremature) return;
+            if (prematureKeyHeld) return;
+            const k = e.key.toLowerCase();
+            const validKeys = getValidKeys(condition);
+            if (!validKeys.includes(k)) return;
+
+            detectingPremature = false;
+            prematureKeyHeld = true;
+            if (prematureResolve) {
+              prematureResolve({ key: k, dir: KEY_TO_DIR[k] || '', method: 'keyboard' });
+              prematureResolve = null;
+            }
+          }
+
+          function onPrematureKeyUp() {
+            prematureKeyHeld = false;
+          }
+
+          detectingPremature = true;
+          document.addEventListener('keydown', onPrematureKeyDown);
+          document.addEventListener('keyup', onPrematureKeyUp);
+
+          // === Fixation: 500ms ===
+          trialDisplay.innerHTML = `<span class="fixation">+</span>`;
+          let wasPremature = await sleepWithPrematureDetection(500);
+
+          if (!wasPremature) {
+            // === Foreperiod (blank): 300~700ms random ===
+            trialDisplay.innerHTML = '';
+            wasPremature = await sleepWithPrematureDetection(trial.foreperiod_ms);
+          }
+
+          // Clean up premature detection
+          detectingPremature = false;
+          document.removeEventListener('keydown', onPrematureKeyDown);
+          document.removeEventListener('keyup', onPrematureKeyUp);
+          prematureResolve = null;
+
+          // === Handle Premature Response ===
+          if (wasPremature && prematureData) {
+            const record = {
+              participant_id: participantId,
+              trial_index: globalTrialIndex,
+              block_index: trial.block_index,
+              block_condition: trial.block_condition,
+              stimulus: trial.stimulus,
+              correct_response: trial.correct_response,
+              participant_response: prematureData.dir,
+              response_key: prematureData.key,
+              input_method: prematureData.method,
+              device_type: deviceType,
+              accuracy: 0,
+              rt_ms: -1,
+              foreperiod_ms: trial.foreperiod_ms,
+              iti_ms: trial.iti_ms,
+              practice_trial: trial.practice_trial,
+              no_response: false,
+              premature_response: true,
+              timestamp: new Date().toISOString(),
+            };
+
+            allData.push(record);
+
+            // Show warning message
+            trialDisplay.innerHTML = `<span class="feedback premature">⚠️ 너무 일찍 눌렀습니다! 화살표가 나타난 후 눌러주세요.</span>`;
+            await sleep(1200);
+
+            // ITI
+            trialDisplay.innerHTML = '';
+            await sleep(trial.iti_ms);
+
+            resolve(record);
+            return;
+          }
+
+          // === Stimulus ===
+          const arrow = ARROW_MAP[trial.stimulus];
+          trialDisplay.innerHTML = `<span class="stimulus">${arrow.symbol}</span>`;
+          stimulusOnsetTime = performance.now();
+          currentCorrectKey = trial.correct_response;
+          acceptingInput = true;
+          keyHeld = false;
+
+          let responded = false;
+          let responseData = {
+            participant_response: '',
+            response_key: '',
+            input_method: '',
+            accuracy: 0,
+            rt_ms: -1,
+            no_response: true,
+          };
+
+          // === Keyboard Input Handler ===
+          function onKeyDown(e) {
+            if (!acceptingInput) return;
+            if (keyHeld) return;
+            const k = e.key.toLowerCase();
+            const validKeys = getValidKeys(condition);
+            if (!validKeys.includes(k)) return;
+
+            acceptingInput = false;
+            keyHeld = true;
+            const rt = performance.now() - stimulusOnsetTime;
+            responded = true;
+
+            let responseDir = KEY_TO_DIR[k] || '';
+
+            responseData.participant_response = responseDir;
+            responseData.response_key = k;
+            responseData.input_method = 'keyboard';
+            responseData.rt_ms = Math.round(rt * 100) / 100;
+            responseData.no_response = false;
+            responseData.accuracy = (k === currentCorrectKey) ? 1 : 0;
+
+            document.removeEventListener('keydown', onKeyDown);
+            clearTimeout(timeoutId);
+            finishTrial();
+          }
+
+          function onKeyUp(e) {
+            keyHeld = false;
+          }
+
+          document.addEventListener('keydown', onKeyDown);
+          document.addEventListener('keyup', onKeyUp);
+
+          // === Touch Input Handler (via promise) ===
+          pendingResolve = (touchResponse) => {
+            if (responded) return;
+            responded = true;
+
+            responseData.participant_response = touchResponse.dir;
+            responseData.response_key = touchResponse.key;
+            responseData.input_method = 'touch';
+            responseData.rt_ms = Math.round(touchResponse.rt * 100) / 100;
+            responseData.no_response = false;
+            responseData.accuracy = (touchResponse.key === currentCorrectKey) ? 1 : 0;
+
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('keyup', onKeyUp);
+            clearTimeout(timeoutId);
+            pendingResolve = null;
+            finishTrial();
+          };
+
+          // Timeout after 2000ms
+          const timeoutId = setTimeout(() => {
+            if (!responded) {
+              acceptingInput = false;
+              responded = true;
+              document.removeEventListener('keydown', onKeyDown);
+              document.removeEventListener('keyup', onKeyUp);
+              pendingResolve = null;
+              finishTrial();
+            }
+          }, RESPONSE_TIMEOUT);
+
+          async function finishTrial() {
+            document.removeEventListener('keyup', onKeyUp);
+
+            const record = {
+              participant_id: participantId,
+              trial_index: globalTrialIndex,
+              block_index: trial.block_index,
+              block_condition: trial.block_condition,
+              stimulus: trial.stimulus,
+              correct_response: trial.correct_response,
+              participant_response: responseData.participant_response,
+              response_key: responseData.response_key,
+              input_method: responseData.input_method,
+              device_type: deviceType,
+              accuracy: responseData.accuracy,
+              rt_ms: responseData.rt_ms,
+              foreperiod_ms: trial.foreperiod_ms,
+              iti_ms: trial.iti_ms,
+              practice_trial: trial.practice_trial,
+              no_response: responseData.no_response,
+              premature_response: false,
+              timestamp: new Date().toISOString(),
+            };
+
+            // Mark anticipatory response
+            if (!responseData.no_response && responseData.rt_ms < ANTICIPATORY_CUTOFF) {
+              record.accuracy = 0;
+            }
+
+            allData.push(record);
+
+            // Practice feedback only
+            if (trial.practice_trial) {
+              if (responseData.no_response) {
+                trialDisplay.innerHTML = `<span class="feedback timeout">시간 초과 — 더 빨리 응답하세요</span>`;
+              } else if (responseData.rt_ms < ANTICIPATORY_CUTOFF) {
+                trialDisplay.innerHTML = `<span class="feedback incorrect">너무 빠름 (예측 반응)</span>`;
+              } else if (responseData.accuracy === 1) {
+                trialDisplay.innerHTML = `<span class="feedback correct">Correct — ${Math.round(responseData.rt_ms)} ms</span>`;
+              } else {
+                const correctSymbol = ARROW_MAP[trial.stimulus].symbol;
+                if (isMobile) {
+                  trialDisplay.innerHTML = `<span class="feedback incorrect">Wrong — 정답: ${correctSymbol}</span>`;
+                } else {
+                  trialDisplay.innerHTML = `<span class="feedback incorrect">Wrong — 정답: ${ARROW_MAP[trial.stimulus].keyLabel} (${correctSymbol})</span>`;
+                }
+              }
+              await sleep(800);
+            }
+
+            // ITI: 400~800ms random
+            trialDisplay.innerHTML = '';
+            await sleep(trial.iti_ms);
+
+            resolve(record);
+          }
+        });
+      }
+
+      // ─── Run a Block of Trials ─────────────────────────────────
+      async function runTrialBlock(trials, globalIndexStart) {
+        let gIdx = globalIndexStart;
+        for (let i = 0; i < trials.length; i++) {
+          await runTrial(trials[i], i, trials.length, gIdx);
+          gIdx++;
+        }
+        return gIdx;
+      }
+
+      // ─── Main Experiment Flow (Blocked: 2 → 3 → 4) ────────────
+      async function startExperiment() {
+        showScreen('experiment');
+        hideKeyMappingBar();
+        hideTouchControls();
+
+        let globalTrialIndex = 0;
+
+        for (let bIdx = 0; bIdx < BLOCK_ORDER.length; bIdx++) {
+          const condition = BLOCK_ORDER[bIdx];
+          const blockIndex = bIdx + 1;
+
+          // ── Practice phase ──
+          await showBlockInstructions(blockIndex, condition, true);
+          showScreen('experiment');
+          const practiceTrials = generateTrials(condition, PRACTICE_TRIALS, true, blockIndex);
+          globalTrialIndex = await runTrialBlock(practiceTrials, globalTrialIndex);
+
+          // ── Main phase ──
+          await showBlockInstructions(blockIndex, condition, false);
+          showScreen('experiment');
+          const mainTrials = generateTrials(condition, MAIN_TRIALS, false, blockIndex);
+          globalTrialIndex = await runTrialBlock(mainTrials, globalTrialIndex);
+        }
+
+        // Done
+        hideKeyMappingBar();
+        hideTouchControls();
+        showResults();
+      }
+
+      // ─── Results Computation ───────────────────────────────────
+      function computeResults() {
+        const mainTrials = allData.filter(d => !d.practice_trial);
+        const results = {};
+
+        [2, 3, 4].forEach(c => {
+          const ct = mainTrials.filter(d => d.block_condition === c);
+          const validForRT = ct.filter(d =>
+            d.accuracy === 1 &&
+            !d.no_response &&
+            d.rt_ms >= ANTICIPATORY_CUTOFF
+          );
+          const rts = validForRT.map(d => d.rt_ms).sort((a, b) => a - b);
+
+          const mean = rts.length ? rts.reduce((s, v) => s + v, 0) / rts.length : 0;
+          const median = rts.length
+            ? (rts.length % 2 === 0
+              ? (rts[rts.length / 2 - 1] + rts[rts.length / 2]) / 2
+              : rts[Math.floor(rts.length / 2)])
+            : 0;
+          const acc = ct.length
+            ? (ct.filter(d => d.accuracy === 1 && !d.no_response).length / ct.length) * 100
+            : 0;
+
+          results[c] = {
+            n: c,
+            log2n: Math.log2(c),
+            meanRT: Math.round(mean * 10) / 10,
+            medianRT: Math.round(median * 10) / 10,
+            accuracy: Math.round(acc * 10) / 10,
+            rts: rts,
+          };
+        });
+        return results;
+      }
+
+      function linearRegression(points) {
+        const n = points.length;
+        let sx = 0, sy = 0, sxy = 0, sxx = 0;
+        points.forEach(p => {
+          sx += p.x;
+          sy += p.y;
+          sxy += p.x * p.y;
+          sxx += p.x * p.x;
+        });
+        const b = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+        const a = (sy - b * sx) / n;
+        const yMean = sy / n;
+        let ssTot = 0, ssRes = 0;
+        points.forEach(p => {
+          ssTot += (p.y - yMean) ** 2;
+          ssRes += (p.y - (a + b * p.x)) ** 2;
+        });
+        const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+        return { a, b, r2 };
+      }
+
+      // ─── Charting ──────────────────────────────────────────────
+      function drawChart(results) {
+        const canvas = document.getElementById('chart-canvas');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const W = 680, H = 380;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.scale(dpr, dpr);
+
+        const pad = { top: 30, right: 40, bottom: 50, left: 70 };
+        const cw = W - pad.left - pad.right;
+        const ch = H - pad.top - pad.bottom;
+
+        const points = Object.values(results).map(r => ({ x: r.log2n, y: r.meanRT }));
+        const xMin = 0.5, xMax = 2.5;
+        const yVals = points.map(p => p.y);
+        const yMinRaw = Math.min(...yVals);
+        const yMaxRaw = Math.max(...yVals);
+        const yPad = (yMaxRaw - yMinRaw) * 0.3 || 50;
+        const yMin = Math.max(0, yMinRaw - yPad);
+        const yMax = yMaxRaw + yPad;
+
+        function toX(v) { return pad.left + ((v - xMin) / (xMax - xMin)) * cw; }
+        function toY(v) { return pad.top + ch - ((v - yMin) / (yMax - yMin)) * ch; }
+
+        // Background
+        ctx.fillStyle = 'rgba(0,0,0,0)';
+        ctx.fillRect(0, 0, W, H);
+
+        // Grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        const yTicks = 5;
+        for (let i = 0; i <= yTicks; i++) {
+          const v = yMin + (yMax - yMin) * (i / yTicks);
+          const y = toY(v);
+          ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+          ctx.fillStyle = '#8891a8';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillText(Math.round(v), pad.left - 10, y + 4);
+        }
+        const xTicks = [1, 1.585, 2];
+        const xLabels = ['1.00', '1.58', '2.00'];
+        xTicks.forEach((v, i) => {
+          const x = toX(v);
+          ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, H - pad.bottom); ctx.stroke();
+          ctx.fillStyle = '#8891a8';
+          ctx.textAlign = 'center';
+          ctx.fillText(xLabels[i], x, H - pad.bottom + 20);
+        });
+
+        // Axis labels
+        ctx.fillStyle = '#8891a8';
+        ctx.font = '13px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('log₂(n)', W / 2, H - 8);
+        ctx.save();
+        ctx.translate(16, H / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Mean RT (ms)', 0, 0);
+        ctx.restore();
+
+        // Regression line
+        const reg = linearRegression(points);
+        ctx.strokeStyle = 'rgba(108,140,255,0.35)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(toX(xMin), toY(reg.a + reg.b * xMin));
+        ctx.lineTo(toX(xMax), toY(reg.a + reg.b * xMax));
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Data points
+        const colors = ['#6c8cff', '#34d399', '#fbbf24'];
+        points.forEach((p, i) => {
+          const x = toX(p.x);
+          const y = toY(p.y);
+          // Glow
+          ctx.beginPath();
+          ctx.arc(x, y, 14, 0, Math.PI * 2);
+          ctx.fillStyle = colors[i] + '22';
+          ctx.fill();
+          // Point
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, Math.PI * 2);
+          ctx.fillStyle = colors[i];
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          // label
+          ctx.fillStyle = '#e2e6f0';
+          ctx.font = 'bold 12px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`n=${results[Object.keys(results)[i]].n}`, x, y - 18);
+          ctx.font = '11px JetBrains Mono, monospace';
+          ctx.fillStyle = '#8891a8';
+          ctx.fillText(`${Math.round(p.y)} ms`, x, y + 26);
+        });
+
+        // Regression info
+        document.getElementById('regression-eq').innerHTML =
+          `RT = ${reg.a.toFixed(1)} + ${reg.b.toFixed(1)} × log₂(n)` +
+          `&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;R² = ${reg.r2.toFixed(4)}` +
+          `&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;a = ${reg.a.toFixed(1)} ms, b = ${reg.b.toFixed(1)} ms/bit`;
+      }
+
+      // ─── Show Results Screen ───────────────────────────────────
+      function showResults() {
+        const results = computeResults();
+
+        // Table
+        const tbody = document.querySelector('#results-table tbody');
+        tbody.innerHTML = '';
+        Object.values(results).forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+      <td>${r.n}</td>
+      <td>${r.log2n.toFixed(2)}</td>
+      <td>${r.meanRT}</td>
+      <td>${r.medianRT}</td>
+      <td>${r.accuracy}%</td>`;
+          tbody.appendChild(tr);
+        });
+
+        drawChart(results);
+        showScreen('results');
+
+        // Send data to Google Sheets
+        sendDataToSheets();
+      }
+
+      // ─── Google Sheets Submission ──────────────────────────────
+      async function sendDataToSheets(attempt = 1) {
+        const statusEl = document.getElementById('sending-status');
+        if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbyZKSY8GDck9JeK14XUoQY1LT-yD3IC6RlDVdnjkBZf9Dp9oIraoepOUL8j5rdC8fs5/execLE') {
+          statusEl.textContent = 'Google Script URL이 설정되지 않았습니다. 데이터가 저장되지 않았습니다.';
+          statusEl.className = 'sending-status error';
+          console.warn('[CRT] Google Script URL not configured. Data not sent.');
+          console.log('[CRT] Data (JSON):', JSON.stringify(allData));
+          return;
+        }
+
+        statusEl.textContent = `데이터 전송 중... (시도 ${attempt}/3)`;
+        statusEl.className = 'sending-status';
+
+        try {
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trials: allData }),
+          });
+
+          statusEl.textContent = '✓ 데이터가 성공적으로 전송되었습니다.';
+          statusEl.className = 'sending-status success';
+        } catch (err) {
+          console.error(`[CRT] Send attempt ${attempt} failed:`, err);
+          if (attempt < 3) {
+            await sleep(1000 * attempt);
+            return sendDataToSheets(attempt + 1);
+          }
+          statusEl.textContent = '✗ 데이터 전송에 실패했습니다. 콘솔을 확인하세요.';
+          statusEl.className = 'sending-status error';
+          console.log('[CRT] Failed data (JSON):', JSON.stringify(allData));
+        }
+      }
+
+      // ─── Prevent Mobile Scroll/Zoom ────────────────────────────
+      document.addEventListener('touchmove', (e) => {
+        // Allow scroll in results screen
+        if (screens.results.classList.contains('active')) return;
+        e.preventDefault();
+      }, { passive: false });
+
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+      }, false);
+
+      // ─── Init ──────────────────────────────────────────────────
+      initStartScreen();
+      setupTouchListeners();
+      document.getElementById('btn-start').addEventListener('click', startExperiment);
+
+    })();
+  </script>
+</body>
+
+</html>
