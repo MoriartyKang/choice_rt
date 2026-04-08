@@ -1573,13 +1573,6 @@
       // ─── Google Sheets Submission ──────────────────────────────
       async function sendDataToSheets(attempt = 1) {
         const statusEl = document.getElementById('sending-status');
-        if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbwcO4dHXQe8oTWA7vF6t7iq6WY0Q0ge8rmy5Kim9sv6scbYvqAn8OunLvMG_BXsaiVC/exec') {
-          statusEl.textContent = 'Google Script URL이 설정되지 않았습니다. 데이터가 저장되지 않았습니다.';
-          statusEl.className = 'sending-status error';
-          console.warn('[CRT] Google Script URL not configured. Data not sent.');
-          console.log('[CRT] Data (JSON):', JSON.stringify(allData));
-          return;
-        }
 
         statusEl.textContent = `데이터 전송 중... (시도 ${attempt}/3)`;
         statusEl.className = 'sending-status';
