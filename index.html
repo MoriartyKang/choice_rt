@@ -1588,8 +1588,7 @@
           await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trials: allData }),
+            body: JSON.stringify({ trials: allData })
           });
 
           statusEl.textContent = '✓ 데이터가 성공적으로 전송되었습니다.';
