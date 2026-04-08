@@ -44,7 +44,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
       position: relative;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
@@ -665,11 +664,35 @@
       }
     }
 
-    /* Prevent mobile scroll/bounce */
-    html,
+    /* Allow scroll on start/instruction screens, lock during experiment */
+    html {
+      height: 100%;
+      overflow-x: hidden;
+    }
+
     body {
+      overflow: auto;
+      overflow-x: hidden;
+      touch-action: pan-y;
+    }
+
+    /* Lock scroll during experiment trials */
+    body.experiment-active {
       overflow: hidden;
       touch-action: none;
+    }
+
+    #start-screen,
+    #instruction-screen {
+      overflow-y: auto;
+      touch-action: pan-y;
+      min-height: auto;
+    }
+
+    #start-screen .card,
+    #instruction-screen .card {
+      overflow-y: auto;
+      touch-action: pan-y;
     }
 
     #results-screen,
@@ -1318,6 +1341,7 @@
 
       // ─── Main Experiment Flow (Blocked: 2 → 3 → 4) ────────────
       async function startExperiment() {
+        document.body.classList.add('experiment-active');
         showScreen('experiment');
         hideKeyMappingBar();
         hideTouchControls();
@@ -1329,19 +1353,24 @@
           const blockIndex = bIdx + 1;
 
           // ── Practice phase ──
+          document.body.classList.remove('experiment-active');
           await showBlockInstructions(blockIndex, condition, true);
+          document.body.classList.add('experiment-active');
           showScreen('experiment');
           const practiceTrials = generateTrials(condition, PRACTICE_TRIALS, true, blockIndex);
           globalTrialIndex = await runTrialBlock(practiceTrials, globalTrialIndex);
 
           // ── Main phase ──
+          document.body.classList.remove('experiment-active');
           await showBlockInstructions(blockIndex, condition, false);
+          document.body.classList.add('experiment-active');
           showScreen('experiment');
           const mainTrials = generateTrials(condition, MAIN_TRIALS, false, blockIndex);
           globalTrialIndex = await runTrialBlock(mainTrials, globalTrialIndex);
         }
 
         // Done
+        document.body.classList.remove('experiment-active');
         hideKeyMappingBar();
         hideTouchControls();
         showResults();
